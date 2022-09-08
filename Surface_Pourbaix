@@ -1,0 +1,329 @@
+import numpy as np
+import pandas as pd
+import math
+import matplotlib.pyplot as plt
+import time
+from sympy import *
+
+
+
+pH = np.linspace(0, 14, 100)
+Ushe = np.linspace(-1.5, 2, 100)
+k = 8.617343*math.pow(10, -5)
+T = 298.15
+Gh2o = -14.23
+Gh2 = -6.90
+Gslab = -520.2162924
+G1h = -523.2058187
+G2h = -527.0086694
+G1o = -527.4679417
+G2o = -531.7756712
+G1oh = -531.3816128
+G2oh = -540.6710993
+Soloh = 0
+
+
+
+X, Y = np.meshgrid(pH, Ushe)
+z1 = 0
+z1list, x1list, y1list = [], [], []
+for pH in np.linspace(0, 14, 100):
+    for Ushe in np.linspace(-1.5, 2, 100):
+        aG1o = Gslab + 1 * Gh2o - G1o - (2 * 1 - 0) * (0.5 * Gh2 - Ushe - 2.303 * k * T * pH)
+        aG1oh = Gslab + 1 * Gh2o - (G1oh + Soloh) - (2 * 1 - 1) * (0.5 * Gh2 - Ushe - 2.303 * k * T * pH)
+        aG1h = Gslab + 0.5 * Gh2 - G1h - Ushe - 2.303 * k * T * pH
+        aG2h = Gslab - G2h + 2 * (0.5 * Gh2 - Ushe - 2.303 * k * T * pH)
+        aG2o = Gslab + 2 * Gh2o - G2o - (2 * 2 - 0) * (0.5 * Gh2 - Ushe - 2.303 * k * T * pH)
+        aG2oh = Gslab + 2 * Gh2o - (G2oh + Soloh) - (2 * 2 - 2) * (0.5 * Gh2 - Ushe - 2.303 * k * T * pH)
+        asurface = 0
+        z1 = min(0, aG1o, aG1oh, aG1h, aG2h, aG2o, aG2oh)
+        z1list.append(z1)
+        x1list.append(pH)
+        y1list.append(Ushe)
+fig, ax1 = plt.subplots(figsize=(12, 12), dpi=80)
+y = np.array(y1list)  #将list变成array
+y.shape = (100, 100)  #重新分成3*3的array
+y = np.mat(y).T
+x = np.array(x1list)  #将list变成array
+x.shape = (100, 100)  #重新分成3*3的array
+x = np.mat(x).T
+z = np.array(z1list)  #将list变成array
+z.shape = (100, 100)  #重新分成3*3的array
+z = np.mat(z).T
+plt.contour(x, y, z)
+plt.contourf(x, y, z)
+
+originlist2, x1list2, x2list2, x3list2, x4list2, x5list2, x6list2, x7list2= [], [], [], [], [], [], [], []
+data3 = pd.DataFrame()
+for Ushe in np.linspace(-1.5, 2.0, 100):
+    aG1o = -0.5*(Gslab + 1 * Gh2o - G1o - (2 * 1 - 0) * (0.5 * Gh2 - Ushe))
+    aG1oh = -0.5*(Gslab + 1 * Gh2o - (G1oh + Soloh) - (2 * 1 - 1) * (0.5 * Gh2 - Ushe))
+    aG1h = -0.5*(Gslab + 0.5 * Gh2 - G1h - Ushe)
+    aG2h = -0.5*(Gslab - G2h + 2 * (0.5 * Gh2 - Ushe))
+    aG2o = -0.5*(Gslab + 2 * Gh2o - G2o - (2 * 2 - 0) * (0.5 * Gh2 - Ushe))
+    aG2oh = -0.5*(Gslab + 2 * Gh2o - (G2oh + Soloh) - (2 * 2 - 2) * (0.5 * Gh2 - Ushe))
+    asurface = 0
+    originlist2.append(Ushe)
+    x1list2.append(aG1o)
+    x2list2.append(aG1oh)
+    x3list2.append(aG1h)
+    x4list2.append(aG2h)
+    x5list2.append(aG2o)
+    x6list2.append(aG2oh)
+    x7list2.append(asurface)
+originlist2 = pd.DataFrame(originlist2)
+x1list2 = pd.DataFrame(x1list2)
+x2list2 = pd.DataFrame(x2list2)
+x3list2 = pd.DataFrame(x3list2)
+x4list2 = pd.DataFrame(x4list2)
+x5list2 = pd.DataFrame(x5list2)
+x6list2 = pd.DataFrame(x6list2)
+x7list2 = pd.DataFrame(x7list2)
+originlist2.columns = ['xpoint']
+x1list2.columns = ['aG1o']
+x2list2.columns = ['aG1oh']
+x3list2.columns = ['aG1h']
+x4list2.columns = ['aG2h']
+x5list2.columns = ['aG2o']
+x6list2.columns = ['aG2oh']
+x7list2.columns = ['asurface']
+data3 = pd.concat([data3, x1list2], axis=1)
+data3 = pd.concat([data3, x2list2], axis=1)
+data3 = pd.concat([data3, x3list2], axis=1)
+data3 = pd.concat([data3, x4list2], axis=1)
+data3 = pd.concat([data3, x5list2], axis=1)
+data3 = pd.concat([data3, x6list2], axis=1)
+data3 = pd.concat([data3, x7list2], axis=1)
+data3['min_val'] = data3.min(axis=1)
+data3['min_idx'] = data3.idxmin(axis=1)
+data3 = pd.concat([data3, originlist2], axis=1)
+fx1 = data3[data3['min_idx'].str.contains('aG1o')]
+fx2 = data3[data3['min_idx'].str.contains('aG1oh')]
+fx3 = data3[data3['min_idx'].str.contains('aG1h')]
+fx4 = data3[data3['min_idx'].str.contains('aG2h')]
+fx5 = data3[data3['min_idx'].str.contains('aG2o')]
+fx6 = data3[data3['min_idx'].str.contains('aG2oh')]
+fx7 = data3[data3['min_idx'].str.contains('asurface')]
+if fx1.empty:
+    x1point1 = 0
+    x1point2 = 0
+else:
+    x1point1 = fx1.iloc[-1]["xpoint"]
+    x1point2 = fx1.iloc[0]["xpoint"]
+if fx2.empty:
+    x2point1 = 0
+    x2point2 = 0
+else:
+    x2point1 = fx2.iloc[-1]["xpoint"]
+    x2point2 = fx1.iloc[0]["xpoint"]
+if fx3.empty:
+    x3point1 = 0
+    x3point2 = 0
+else:
+    x3point1 = fx3.iloc[-1]["xpoint"]
+    x3point2 = fx3.iloc[0]["xpoint"]
+if fx4.empty:
+    x4point1 = 0
+    x4point2 = 0
+else:
+    x4point1 = fx4.iloc[-1]["xpoint"]
+    x4point2 = fx4.iloc[0]["xpoint"]
+if fx5.empty:
+    x5point1 = 0
+    x5point2 = 0
+else:
+    x5point1 = fx5.iloc[-1]["xpoint"]
+    x5point2 = fx5.iloc[0]["xpoint"]
+if fx6.empty:
+    x6point1 = 0
+    x6point2 = 0
+else:
+    x6point1 = fx6.iloc[-1]["xpoint"]
+    x6point2 = fx6.iloc[0]["xpoint"]
+if fx7.empty:
+    x7point1 = 0
+    x7point2 = 0
+else:
+    x7point1 = fx7.iloc[-1]["xpoint"]
+    x7point2 = fx7.iloc[0]["xpoint"]
+print(x1point1)
+print(x1point2)
+print(x2point1)
+print(x2point2)
+print(x3point1)
+print(x3point2)
+print(x4point1)
+print(x4point2)
+print(x5point1)
+print(x5point2)
+print(x6point1)
+print(x6point2)
+print(x7point1)
+print(x7point2)
+# x1point2 = fx1.iloc[-2]["xpoint"]
+# x1point3 = fx1.iloc[-3]["xpoint"]
+# x1point4 = fx1.iloc[-4]["xpoint"]
+# # x2point = fx2.iloc[-1]["xpoint"]
+# # x3point = fx3.iloc[-1]["xpoint"]
+# # x4point = fx4.iloc[-1]["xpoint"]
+# # x5point = fx5.iloc[-1]["xpoint"]
+# print(x1point1)
+
+originlist3, x1list3, x2list3, x3list3, x4list3, x5list3, x6list3, x7list3= [], [], [], [], [], [], [], []
+data4 = pd.DataFrame()
+for Ushe in np.linspace(-1.5, 2.0, 100):
+    aG1o = -0.5*(Gslab + 1 * Gh2o - G1o - (2 * 1 - 0) * (0.5 * Gh2 - Ushe - 2.303 * k * T * 14))
+    aG1oh = -0.5*(Gslab + 1 * Gh2o - (G1oh + Soloh) - (2 * 1 - 1) * (0.5 * Gh2 - Ushe - 2.303 * k * T * 14))
+    aG1h = -0.5*(Gslab + 0.5 * Gh2 - G1h - Ushe - 2.303 * k * T * 14)
+    aG2h = -0.5*(Gslab - G2h + 2 * (0.5 * Gh2 - Ushe - 2.303 * k * T * 14))
+    aG2o = -0.5*(Gslab + 2 * Gh2o - G2o - (2 * 2 - 0) * (0.5 * Gh2 - Ushe - 2.303 * k * T * 14))
+    aG2oh = -0.5*(Gslab + 2 * Gh2o - (G2oh + Soloh) - (2 * 2 - 2) * (0.5 * Gh2 - Ushe - 2.303 * k * T * 14))
+    asurface = 0
+    originlist3.append(Ushe)
+    x1list3.append(aG1o)
+    x2list3.append(aG1oh)
+    x3list3.append(aG1h)
+    x4list3.append(aG2h)
+    x5list3.append(aG2o)
+    x6list3.append(aG2oh)
+    x7list3.append(asurface)
+originlist3 = pd.DataFrame(originlist3)
+x1list3 = pd.DataFrame(x1list3)
+x2list3 = pd.DataFrame(x2list3)
+x3list3 = pd.DataFrame(x3list3)
+x4list3 = pd.DataFrame(x4list3)
+x5list3 = pd.DataFrame(x5list3)
+x6list3 = pd.DataFrame(x6list3)
+x7list3 = pd.DataFrame(x7list3)
+originlist3.columns = ['xpoint']
+x1list3.columns = ['aG1o']
+x2list3.columns = ['aG1oh']
+x3list3.columns = ['aG1h']
+x4list3.columns = ['aG2h']
+x5list3.columns = ['aG2o']
+x6list3.columns = ['aG2oh']
+x7list3.columns = ['asurface']
+data4 = pd.concat([data4, x1list3], axis=1)
+data4 = pd.concat([data4, x2list3], axis=1)
+data4 = pd.concat([data4, x3list3], axis=1)
+data4 = pd.concat([data4, x4list3], axis=1)
+data4 = pd.concat([data4, x5list3], axis=1)
+data4 = pd.concat([data4, x6list3], axis=1)
+data4 = pd.concat([data4, x7list3], axis=1)
+data4['min_idx'] = data4.idxmin(axis=1)
+data4['min_val'] = data4.min(axis=1)
+data4 = pd.concat([data4, originlist3], axis=1)
+fx11 = data4[data4['min_idx'].str.contains('aG1o')]
+fx22 = data4[data4['min_idx'].str.contains('aG1oh')]
+fx33 = data4[data4['min_idx'].str.contains('aG1h')]
+fx44 = data4[data4['min_idx'].str.contains('aG2h')]
+fx55 = data4[data4['min_idx'].str.contains('aG2o')]
+fx66 = data4[data4['min_idx'].str.contains('aG2oh')]
+fx77 = data4[data4['min_idx'].str.contains('asurface')]
+if fx11.empty:
+    x1point11 = 0
+    x1point22 = 0
+else:
+    x1point11 = fx11.iloc[-1]["xpoint"]
+    x1point22 = fx11.iloc[0]["xpoint"]
+if fx22.empty:
+    x2point11 = 0
+    x2point22 = 0
+else:
+    x2point11 = fx22.iloc[-1]["xpoint"]
+    x2point22 = fx22.iloc[0]["xpoint"]
+if fx33.empty:
+    x3point11 = 0
+    x3point22 = 0
+else:
+    x3point11 = fx33.iloc[-1]["xpoint"]
+    x3point22 = fx33.iloc[0]["xpoint"]
+if fx44.empty:
+    x4point11 = 0
+    x4point22 = 0
+else:
+    x4point11 = fx44.iloc[-1]["xpoint"]
+    x4point22 = fx44.iloc[0]["xpoint"]
+if fx55.empty:
+    x5point11 = 0
+    x5point22 = 0
+else:
+    x5point11 = fx55.iloc[-1]["xpoint"]
+    x5point22 = fx55.iloc[0]["xpoint"]
+if fx66.empty:
+    x6point11 = 0
+    x6point22 = 0
+else:
+    x6point11 = fx66.iloc[-1]["xpoint"]
+    x6point22 = fx66.iloc[0]["xpoint"]
+if fx77.empty:
+    x7point11 = 0
+    x7point22 = 0
+else:
+    x7point11 = fx77.iloc[-1]["xpoint"]
+    x7point22 = fx77.iloc[0]["xpoint"]
+print('林北我是分界线')
+print(x1point11)
+print(x1point22)
+print(x2point11)
+print(x2point22)
+print(x3point11)
+print(x3point22)
+print(x4point11)
+print(x4point22)
+print(x5point11)
+print(x5point22)
+print(x6point11)
+print(x6point22)
+print(x7point11)
+print(x7point22)
+fig, ax2 = plt.subplots(figsize=(8, 8), dpi=160)
+################求解方程的a和b,
+# def function()
+# x = Symbol('x')
+# y = Symbol('y')
+# print(x4point1)
+# print(x4point11)
+# print(solve([x4point1*x + y, x4point11 * x + y-14], [x, y]))
+######################需要改变函数
+x = np.linspace(0, 14, 100)
+y1 =  -0.05808*x + 1.57576
+y2 = -0.05808*x + 0.33838
+y3 = -0.05808*x - 0.19192
+y4 =  -0.05808*x - 0.40404
+y5 = -0.05808*x - 0.164314
+y6 = -0.05808*x + 1.51114
+y7 =  -0.05808*x + 0.30303
+y8 =  -0.05808*x + 0.463671
+# y9 = -0.05808*x + 0.05556
+# y12 = -0.06061*x + 0.0202
+y10 = -1.5 + 0*x
+y11 = 2 + 0*x
+# plt.plot(x, y1, color=(0.384313725, 0.584313725, 0.584313725))
+# plt.plot(x, y2, color=(0.431372549,	0.619607843, 0.807843137))
+# plt.plot(x, y3, color=(0.462745098, 0.729411765, 0.501960784))
+# plt.plot(x, y4, color=(0.431372549,	0.619607843, 0.807843137))
+#######################填色部分，注意where之后的部分
+# plt.fill(x, y1, 'b', alpha=0.5)
+# plt.fill(x, y2, 'r', alpha=0.3)
+
+# ax2.fill_between(x, y0, y1, facecolor='red', where=y1>y0, alpha=0.5,interpolate=True)
+ax2.fill_between(x, y11, y6, facecolor=(0.384313725, 0.584313725, 0.584313725), where=y11 > y6, alpha=0.5, interpolate=True)
+ax2.fill_between(x, y6, y8, facecolor=(0.462745098, 0.729411765, 0.501960784), where=y6> y8, alpha=0.5, interpolate=True)
+# ax2.fill_between(x, y2, y8, facecolor=(0.517647059,0.341176471,0.301960784), where=y2 > y8, alpha=0.5, interpolate=True)
+ax2.fill_between(x, y8, y5, facecolor=(0.552941176, 0.415686275, 0.721568627), where=y8 > y5, alpha=0.5, interpolate=True)
+ax2.fill_between(x, y5, y10, facecolor=(0.901960784, 0.57254902, 0.560784314), where=y5 > y10, alpha=0.5, interpolate=True)
+labelfont = {
+            'family': 'Arial',
+            'color': 'black',
+            'size': 18
+        }
+ax2.set_xlabel('pH', fontdict=labelfont)
+ax2.set_ylabel('U$\mathregular{_{SHE}}$ (V)', fontdict=labelfont)
+plt.rcParams['font.sans-serif'] = ['Arial']
+ax2.set_xlim(0, 14)
+ax2.set_ylim(-1.5, 2.0)
+ax2.tick_params(labelsize=14)
+
+plt.show()
+
